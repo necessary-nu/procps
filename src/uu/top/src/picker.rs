@@ -302,7 +302,24 @@ fn pr(pid: u32, _stat: Stat) -> Box<dyn Column> {
     }
 
     // real-time processes
+    #[cfg(all(target_os = "linux", target_env = "gnu"))]
     let mut param = sched_param { sched_priority: 0 };
+
+    #[cfg(all(target_os = "linux", target_env = "musl"))]
+    let mut param = sched_param {
+        sched_priority: 0,
+        sched_ss_low_priority: 0,
+        sched_ss_repl_period: timespec {
+            tv_sec: 0,
+            tv_nsec: 0,
+        },
+        sched_ss_init_budget: timespec {
+            tv_sec: 0,
+            tv_nsec: 0,
+        },
+        sched_ss_max_repl: 0,
+    };
+
     unsafe { sched_getparam(pid as c_int, &mut param) };
     if param.sched_priority == -1 {
         return Box::new(None);
